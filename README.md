@@ -2,6 +2,8 @@
 
 ## ESP-IDF Install Guide
 
+### For more details, I recommend referring to this guide [https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/windows-setup.html] or to developer.
+
 1. The easiest way to install ESP-IDF’s prerequisites is to download one of ESP-IDF Tools Installers.<br>
 [https://dl.espressif.com/dl/esp-idf/?idf=4.4][https://dl.espressif.com/dl/idf-installer/espressif-ide-setup-2.8.1-with-esp-idf-4.4.4.exe]<br><br>
 !! YOU NEED ESP-IDF V4.4.4 !! This is the stable version
