@@ -8,9 +8,6 @@
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 #include "cJSON.h"
-#include "nvs_flash.h"
-#include "esp_wifi.h"
-#include "string.h"
 
 
 #define DEVICE_NAME "MY TEST BLE DEVICE"
@@ -19,14 +16,126 @@ void ble_app_advertise(void);
 
 char * wifi_response_to_ble = "";
 
-static int BLE_buttery_lvl(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg);
-static int BLE_wifi_ssid(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg);
-static int BLE_wifi_pass(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg);
+uint32_t buttery_lvl = 0;
+char wifi_ssid[50];
+char wifi_pass[50];
 
-static int BLE_acc(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg);
-static int BLE_gyro(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg);
-static int BLE_GPS(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg);
-static int BLE_LED(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg);
+uint32_t acc_lvl = 0;
+uint32_t gyro_lvl = 0;
+uint64_t gps_pos = 0;
+bool led_state = 0;
+
+uint64_t map(uint64_t x, uint64_t in_min, uint64_t in_max, uint64_t out_min, uint64_t out_max)
+{
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
+void getRandomStr(char* output, int len){
+    char* chars = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890";
+    for(int i = 0; i< len; i++){
+        uint32_t rand_int = esp_random();
+        int random_index = map(rand_int, 0, 0xFFFFFFFF, 0, strlen(chars));
+        output[i] = chars[random_index];
+    }
+}
+
+void acc_vtask(void *pvParameter){
+    while(1){
+        uint32_t value = esp_random();
+        acc_lvl = map(value, 0, 0xFFFFFFFF, 0, 0x00FFFFFF);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+}
+
+void gyro_vtask(void *pvParameter){
+    while(1){
+        uint32_t value = esp_random();
+        gyro_lvl = map(value, 0, 0xFFFFFFFF, 0, 0x00FFFFFF);
+        vTaskDelay(5000 / portTICK_PERIOD_MS);
+    }
+}
+
+void GPS_vtask(void *pvParameter){
+    while(1){
+        uint32_t value_l = esp_random();
+        uint32_t value_h = esp_random();
+        gps_pos = (((uint32_t) value_l) << 32) | value_h;
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
+    }
+}
+
+void LED_vtask(void *pvParameter){
+    while(1){
+        vTaskDelay(8000 / portTICK_PERIOD_MS);
+        led_state = 0;
+        vTaskDelay(2000 / portTICK_PERIOD_MS);     
+        led_state = 1;
+    }
+}
+
+void batt_wifi_data_vtask(void *pvParameter){
+    while(1){
+        getRandomStr(wifi_ssid, 50);
+        getRandomStr(wifi_pass, 50);        
+        uint32_t value = esp_random();
+        buttery_lvl = map(value, 0, 0xFFFFFFFF, 0, 100);
+        vTaskDelay(1000 * 60 / portTICK_PERIOD_MS);  
+    }
+}
+
+
+
+static int gatt_svr_buttery_lvl(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    char buffer[4];
+    sprintf(buffer, "%d", buttery_lvl);
+
+    os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
+    return 0;
+}
+
+static int gatt_svr_wifi_ssid(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    os_mbuf_append(ctxt->om, wifi_ssid, sizeof(wifi_ssid));
+    return 0;
+}
+
+static int gatt_svr_wifi_pass(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    os_mbuf_append(ctxt->om, wifi_ssid, sizeof(wifi_pass));
+    return 0;
+}
+
+
+static int gatt_svr_acc(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    char buffer[16];
+    sprintf(buffer, "%zu", acc_lvl);
+
+    os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
+    return 0;
+}
+
+static int gatt_svr_gyro(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    char buffer[16];
+    sprintf(buffer, "%zu", gyro_lvl);
+
+    os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
+    return 0;
+}
+
+static int gatt_svr_GPS(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    char buffer[32];
+    sprintf(buffer, "%" PRIu64, gps_pos);
+
+    os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
+    return 0;
+}
+
+static int gatt_svr_LED(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
+    char buffer[10];
+    sprintf(buffer, "LED:%s", led_state?"True":"False");
+
+    os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
+    return 0;
+}
+
 
 
 // static int device_write(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
@@ -71,36 +180,32 @@ static const struct ble_gatt_svc_def gat_svcs[] = {
      .uuid = BLE_UUID16_DECLARE(0x0010000),
      .characteristics = (struct ble_gatt_chr_def[]){
          {.uuid = BLE_UUID16_DECLARE(0x0010001),
-          .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE,
-          .access_cb = device_info},
+          .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
+          .access_cb = gatt_svr_buttery_lvl},
          {.uuid = BLE_UUID16_DECLARE(0x0010002),
           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE,
-          .access_cb = device_info},
+          .access_cb = gatt_svr_wifi_ssid},
          {.uuid = BLE_UUID16_DECLARE(0x0010003),
           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE,
-          .access_cb = device_info},
+          .access_cb = gatt_svr_wifi_pass},
          {0}}},
     {.type = BLE_GATT_SVC_TYPE_PRIMARY,
      .uuid = BLE_UUID16_DECLARE(0x0020000),
      .characteristics = (struct ble_gatt_chr_def[]){
          {.uuid = BLE_UUID16_DECLARE(0x0020001),
           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
-          .access_cb = WiFi_info},
+          .access_cb = gatt_svr_acc},
          {.uuid = BLE_UUID16_DECLARE(0x0020002),
           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
-          .access_cb = device_write},
+          .access_cb = gatt_svr_gyro},
          {.uuid = BLE_UUID16_DECLARE(0x0020003),
           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
-          .access_cb = WiFi_info},
+          .access_cb = gatt_svr_GPS},
          {.uuid = BLE_UUID16_DECLARE(0x0020004),
           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_NOTIFY,
-          .access_cb = device_write},
+          .access_cb = gatt_svr_LED},
          {0}}},
     {0}};
-
-
-
-
 
 
 static int ble_gap_event(struct ble_gap_event *event, void *arg)

@@ -13,6 +13,7 @@
         "netfwd": "c",
         "exception": "cpp",
         "variant": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "string": "c"
     }
 }
