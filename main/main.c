@@ -177,24 +177,24 @@ static int gatt_svr_wifi_pass(uint16_t conn_handle, uint16_t attr_handle, struct
 
 
 static int gatt_svr_acc(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
-    char buffer[16];
-    sprintf(buffer, "%zu", acc_lvl);
+    char buffer[3];
+    sprintf(buffer, "%02X", acc_lvl);
 
     os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
     return 0;
 }
 
 static int gatt_svr_gyro(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
-    char buffer[16];
-    sprintf(buffer, "%zu", gyro_lvl);
+    char buffer[3];
+    sprintf(buffer, "%02X", gyro_lvl);
 
     os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
     return 0;
 }
 
 static int gatt_svr_gps(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
-    char buffer[32];
-    sprintf(buffer, "%" PRIu64, gps_pos);
+    char buffer[8];
+    sprintf(buffer, "%07llX", gps_pos);
 
     os_mbuf_append(ctxt->om, buffer, sizeof(buffer));
     return 0;
