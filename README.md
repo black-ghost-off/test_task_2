@@ -33,4 +33,4 @@ Serial port names start with COM in Windows.*
 >idf.py -p %PORT% monitor
 
 <br><br>
-### For tests on the phone, I recommend using "nRF connect" or "BLE scanner"
+### For tests on the phone, I recommend using "nRF connect"
