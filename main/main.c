@@ -10,7 +10,7 @@
 #include "services/gatt/ble_svc_gatt.h"
 #include "cJSON.h"
 
-
+// defines global variables
 #define DEVICE_NAME "MY TEST BLE DEVICE"
 uint8_t ble_addr_type;
 void ble_app_advertise(void);
@@ -24,23 +24,27 @@ uint16_t buttery_lvl_handle;
 
 #define BLINK_GPIO GPIO_NUM_2
 
+// defines global data variables
 uint32_t acc_lvl = 0;
 uint32_t gyro_lvl = 0;
 uint64_t gps_pos = 0;
 bool led_state = 0;
-
-TaskHandle_t led_task_handle = NULL;
 
 uint16_t acc_lvl_handle;
 uint16_t gyro_lvl_handle;
 uint16_t gps_pos_handle;
 uint16_t led_state_handle;
 
+// define handler for suspens and resume led task
+TaskHandle_t led_task_handle = NULL;
+
+// function for mapping value
 uint64_t map(uint64_t x, uint64_t in_min, uint64_t in_max, uint64_t out_min, uint64_t out_max)
 {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+// function for gen random string with variable length 
 void getRandomStr(char* output, int len){
     char* chars = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890";
     for(int i = 0; i< len; i++){
@@ -50,6 +54,7 @@ void getRandomStr(char* output, int len){
     }
 }
 
+// define tasks
 void blink_task(void *pvParameter){
     vTaskSuspend(led_task_handle);
     for(int i = 0; i < 20; i++){
@@ -134,7 +139,7 @@ void batt_wifi_data_vtask(void *pvParameter){
 }
 
 
-
+// define gatt_svr handler for different characteristics
 static int gatt_svr_buttery_lvl(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg){
     char buffer[4];
     sprintf(buffer, "%d", buttery_lvl);
@@ -208,6 +213,8 @@ static int gatt_svr_led(uint16_t conn_handle, uint16_t attr_handle, struct ble_g
     return 0;
 }
 
+
+//define characteristics table
 static const struct ble_gatt_svc_def gat_svcs[] = {
     {.type = BLE_GATT_SVC_TYPE_PRIMARY,
      .uuid = BLE_UUID32_DECLARE(0x0010000),
@@ -246,6 +253,7 @@ static const struct ble_gatt_svc_def gat_svcs[] = {
     {0}};
 
 
+// define ble gap events handler
 static int ble_gap_event(struct ble_gap_event *event, void *arg)
 {
     switch (event->type)
@@ -274,6 +282,8 @@ static int ble_gap_event(struct ble_gap_event *event, void *arg)
     return 0;
 }
 
+
+// define supporting function for ble stack
 void ble_app_advertise(void)
 {
     struct ble_hs_adv_fields fields;
@@ -297,24 +307,25 @@ void ble_app_advertise(void)
     ble_gap_adv_start(ble_addr_type, NULL, BLE_HS_FOREVER, &adv_params, ble_gap_event, NULL);
 }
 
+// define supporting function for ble stack
 void ble_app_on_sync(void)
 {
     ble_hs_id_infer_auto(0, &ble_addr_type);
     ble_app_advertise();
 }
 
+// define supporting function for ble stack
 void host_task(void *param)
 {
     nimble_port_run();
 }
 
+// MAIN!!!!
 void app_main(void)
 {
 
     gpio_reset_pin(BLINK_GPIO);
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
-
-    nvs_flash_init();
 
     esp_nimble_hci_and_controller_init();
     nimble_port_init();
