@@ -222,7 +222,7 @@ static int gatt_svr_led(uint16_t conn_handle, uint16_t attr_handle, struct ble_g
 //define characteristics table  For a better understanding of this, I recommend reviewing the nimBLE datasheet.
 static const struct ble_gatt_svc_def gat_svcs[] = {
     {.type = BLE_GATT_SVC_TYPE_PRIMARY,
-     .uuid = BLE_UUID32_DECLARE(0x0010000),
+     .uuid = BLE_UUID128_DECLARE(0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0x00, 0x00, 0x00, 0x01),
      .characteristics = (struct ble_gatt_chr_def[]){
          {.uuid = BLE_UUID16_DECLARE(0x0001),
           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
@@ -236,7 +236,7 @@ static const struct ble_gatt_svc_def gat_svcs[] = {
           .access_cb = gatt_svr_wifi_pass},
          {0}}},
     {.type = BLE_GATT_SVC_TYPE_PRIMARY,
-     .uuid = BLE_UUID32_DECLARE(0x0020000),
+     .uuid =  BLE_UUID128_DECLARE(0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0x00, 0x00, 0x00, 0x02),
      .characteristics = (struct ble_gatt_chr_def[]){
          {.uuid = BLE_UUID16_DECLARE(0x0001),
           .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
