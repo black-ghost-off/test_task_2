@@ -63,12 +63,14 @@ void blink_task(void *pvParameter){
         vTaskDelay(500 / portTICK_PERIOD_MS);       // Delay
         led_state = 0;                              // Set led_state
         ble_gatts_chr_updated(led_state_handle);    // Notify about status LED
+        ESP_LOGI("LED", "%s", led_state?"ON":"OFF");
         gpio_set_level(BLINK_GPIO, led_state);      // Set LED output lvl
 
 
         vTaskDelay(500 / portTICK_PERIOD_MS);
         led_state = 1;
         ble_gatts_chr_updated(led_state_handle);
+        ESP_LOGI("LED", "%s", led_state?"ON":"OFF");
         gpio_set_level(BLINK_GPIO, led_state);
     }
     vTaskResume(led_task_handle);                   // Resume another task for led
@@ -119,12 +121,16 @@ void led_vtask(void *pvParameter){
 
         led_state = 1;                                              // global led status
         ble_gatts_chr_updated(led_state_handle);                    // notify ble about led status
+        ESP_LOGI("LED", "%s", led_state?"ON":"OFF");
+    
         gpio_set_level(BLINK_GPIO, led_state);                      // set LED output level
 
         vTaskDelay(2000 / portTICK_PERIOD_MS);   
 
         led_state = 0;
         ble_gatts_chr_updated(led_state_handle);
+        ESP_LOGI("LED", "%s", led_state?"ON":"OFF");
+
         gpio_set_level(BLINK_GPIO, led_state);
     }
 }
@@ -331,6 +337,7 @@ void app_main(void)
 
     gpio_reset_pin(BLINK_GPIO);                             // Configure GPIO for led pin
     gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
+    nvs_flash_init();
 
     esp_nimble_hci_and_controller_init();                   // Start nimBLE server, and config. I recommend not to touch
     nimble_port_init();
@@ -346,11 +353,11 @@ void app_main(void)
     nimble_port_freertos_init(host_task);                   // Up to here)
 
     // Create sub-tasks for parallel execution
-    xTaskCreate(acc_vtask, "acc_task", 1000, NULL, 1, NULL);
-    xTaskCreate(gyro_vtask, "gyro_task", 1000, NULL, 1, NULL);
-    xTaskCreate(gps_vtask, "gps_task", 1000, NULL, 1, NULL);
-    xTaskCreate(led_vtask, "led_task", 1000, NULL, 1, &led_task_handle); 
+    xTaskCreate(acc_vtask, "acc_task", 2000, NULL, 1, NULL);
+    xTaskCreate(gyro_vtask, "gyro_task", 2000, NULL, 1, NULL);
+    xTaskCreate(gps_vtask, "gps_task", 2000, NULL, 1, NULL);
+    xTaskCreate(led_vtask, "led_task", 2000, NULL, 1, &led_task_handle); 
 
-    xTaskCreate(batt_wifi_data_vtask, "batt_wifi_data_task", 1000, NULL, 1, NULL);
+    xTaskCreate(batt_wifi_data_vtask, "batt_wifi_data_task", 2000, NULL, 1, NULL);
 
 }
