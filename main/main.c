@@ -38,6 +38,7 @@ uint16_t led_state_handle;
 
 // define handler for suspens and resume led task
 TaskHandle_t led_task_handle = NULL;
+TaskHandle_t led_blink_task_handle = NULL;
 
 // function for mapping value
 uint64_t map(uint64_t x, uint64_t in_min, uint64_t in_max, uint64_t out_min, uint64_t out_max)
@@ -166,8 +167,7 @@ static int gatt_svr_wifi_ssid(uint16_t conn_handle, uint16_t attr_handle, struct
         memcpy(wifi_ssid, ctxt->om->om_data, ctxt->om->om_len>50?50:ctxt->om->om_len);  // Copy from BLE stack buffer to global variable with checkout size
 
         os_mbuf_append(ctxt->om, wifi_ssid, sizeof(wifi_ssid));                         // "Respone"
-        
-        xTaskCreate(blink_task, "blink_task", 1000, NULL, 1, NULL);                     // Create task for blink led
+        xTaskCreate(blink_task, "blink_task", 5000, NULL, 1, led_blink_task_handle);                     // Create task for blink led
 
     }
     else if(ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR){                                   // Response current ssid variable to BLE stack
@@ -182,8 +182,8 @@ static int gatt_svr_wifi_pass(uint16_t conn_handle, uint16_t attr_handle, struct
         memcpy(wifi_ssid, ctxt->om->om_data, ctxt->om->om_len>50?50:ctxt->om->om_len);
 
         os_mbuf_append(ctxt->om, wifi_pass, sizeof(wifi_pass));
-        
-        xTaskCreate(blink_task, "blink_task", 1000, NULL, 1, NULL);
+
+        xTaskCreate(blink_task, "blink_task", 5000, NULL, 1, led_blink_task_handle);
 
     }
     else if(ctxt->op == BLE_GATT_ACCESS_OP_READ_CHR){
@@ -257,7 +257,7 @@ static const struct ble_gatt_svc_def gat_svcs[] = {
           .val_handle = &gps_pos_handle,
           .access_cb = gatt_svr_gps},
          {.uuid = BLE_UUID16_DECLARE(0x0004),
-          .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_WRITE | BLE_GATT_CHR_F_NOTIFY,
+          .flags = BLE_GATT_CHR_F_READ | BLE_GATT_CHR_F_NOTIFY,
           .val_handle = &led_state_handle,
           .access_cb = gatt_svr_led},
          {0}}},
@@ -353,11 +353,11 @@ void app_main(void)
     nimble_port_freertos_init(host_task);                   // Up to here)
 
     // Create sub-tasks for parallel execution
-    xTaskCreate(acc_vtask, "acc_task", 2000, NULL, 1, NULL);
-    xTaskCreate(gyro_vtask, "gyro_task", 2000, NULL, 1, NULL);
-    xTaskCreate(gps_vtask, "gps_task", 2000, NULL, 1, NULL);
-    xTaskCreate(led_vtask, "led_task", 2000, NULL, 1, &led_task_handle); 
+    xTaskCreate(acc_vtask, "acc_task", 5000, NULL, 1, NULL);
+    xTaskCreate(gyro_vtask, "gyro_task", 5000, NULL, 1, NULL);
+    xTaskCreate(gps_vtask, "gps_task", 5000, NULL, 1, NULL);
+    xTaskCreate(led_vtask, "led_task", 5000, NULL, 1, &led_task_handle); 
 
-    xTaskCreate(batt_wifi_data_vtask, "batt_wifi_data_task", 2000, NULL, 1, NULL);
+    xTaskCreate(batt_wifi_data_vtask, "batt_wifi_data_task", 5000, NULL, 1, NULL);
 
 }
