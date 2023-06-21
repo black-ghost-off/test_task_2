@@ -1,4 +1,4 @@
-# TetaLab test task
+# test task
 
 ## ESP-IDF Install Guide
 
